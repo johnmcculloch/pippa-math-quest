@@ -50,7 +50,7 @@ A modular, retro-style educational game designed to teach two-digit column addit
 Clone the repository and launch the main loop[cite: 3]:
 
 ```bash
-git clone [https://github.com/](https://github.com/)<YOUR_GITHUB_USERNAME>/pippa-math-quest.git
+git clone https://github.com/johnmcculloch/pippa-math-quest.git
 cd pippa-math-quest
 python3 pippa_maths_retrogame.py
 ```

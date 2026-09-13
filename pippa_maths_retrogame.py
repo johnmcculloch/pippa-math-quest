@@ -264,6 +264,8 @@ def t(key, lang="en", **kwargs):
 # -------------------------------------------------------------
 class GameDirector:
     def __init__(self, character_name="mario"):
+        # Cross-platform Y-axis polarity compensation
+        self.y_mult = -1.0 if sys.platform == "darwin" else 1.0
         self.score = 0
         self.language = "en"
         self.last_school = "en"
@@ -324,16 +326,16 @@ class GameDirector:
 
         if self.controller:
             lx = self.controller.get_axis(0)
-            ly = -self.controller.get_axis(1)
+            ly = self.y_mult * self.controller.get_axis(1)
 
             rx, ry = 0.0, 0.0
             num_axes = self.controller.get_numaxes()
             if num_axes == 4:
                 rx = self.controller.get_axis(2)
-                ry = -self.controller.get_axis(3)
+                ry = self.y_mult * self.controller.get_axis(3)
             elif num_axes >= 5:
                 rx = self.controller.get_axis(3)
-                ry = -self.controller.get_axis(4)
+                ry = self.y_mult * self.controller.get_axis(4)
 
             l_mag = abs(lx) + abs(ly)
             r_mag = abs(rx) + abs(ry)
@@ -361,13 +363,13 @@ class GameDirector:
         if not self.controller:
             return 0.0
 
-        ly = -self.controller.get_axis(1)
+        ly = self.y_mult * self.controller.get_axis(1)
         ry = 0.0
         num_axes = self.controller.get_numaxes()
         if num_axes == 4:
-            ry = -self.controller.get_axis(3)
+            ry = self.y_mult * self.controller.get_axis(3)
         elif num_axes >= 5:
-            ry = -self.controller.get_axis(4)
+            ry = self.y_mult * self.controller.get_axis(4)
 
         if abs(ry) > abs(ly):
             return ry

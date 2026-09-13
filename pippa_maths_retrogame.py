@@ -264,17 +264,18 @@ def t(key, lang="en", **kwargs):
 # -------------------------------------------------------------
 class GameDirector:
     def __init__(self, character_name="mario"):
-        # Cross-platform Y-axis polarity compensation
-        self.y_mult = -1.0 if sys.platform == "darwin" else 1.0
         self.score = 0
         self.language = "en"
         self.last_school = "en"
+        # Cross-platform Y-axis polarity compensation
+        self.y_mult = -1.0 if sys.platform == "darwin" else 1.0
         
         self.sfx = SoundFX()
         self.speech = SmartSpeechEngine()
         self.controller = None
+        self.controller_centered = False  # Guard against startup ghost input
         self.init_controller()
-        
+       
         self.digit_w, self.digit_h = FONT_BIG.size("1")
         self.math_player_sprite = load_character_sprite(character_name, target_height=self.digit_h)
         self.maze_player_sprite = load_character_sprite(character_name, target_height=34)
@@ -293,6 +294,7 @@ class GameDirector:
         self.load_level(self.current_level)
 
     def init_controller(self):
+        self.controller_centered = False
         if pygame.joystick.get_count() > 0:
             self.controller = pygame.joystick.Joystick(0)
             print(f"Connected: {self.controller.get_name()}")
@@ -304,6 +306,7 @@ class GameDirector:
             self.init_controller()
         elif event.type == pygame.JOYDEVICEREMOVED:
             self.controller = None
+            self.controller_centered = False
 
     def load_level(self, level_num):
         self.current_level = level_num
@@ -337,6 +340,13 @@ class GameDirector:
                 rx = self.controller.get_axis(3)
                 ry = self.y_mult * self.controller.get_axis(4)
 
+            # Wait until the controller reports a genuine neutral position before applying input
+            if not self.controller_centered:
+                if abs(lx) < 0.2 and abs(ly) < 0.2 and abs(rx) < 0.2 and abs(ry) < 0.2:
+                    self.controller_centered = True
+                else:
+                    lx, ly, rx, ry = 0.0, 0.0, 0.0, 0.0
+
             l_mag = abs(lx) + abs(ly)
             r_mag = abs(rx) + abs(ry)
 
@@ -360,7 +370,7 @@ class GameDirector:
         return move_x, move_y
 
     def get_stick_vertical(self):
-        if not self.controller:
+        if not self.controller or not self.controller_centered:
             return 0.0
 
         ly = self.y_mult * self.controller.get_axis(1)

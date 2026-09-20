@@ -10,6 +10,7 @@ import shutil
 import subprocess
 from characters import load_character_sprite
 from gameplay_parameters import LEVELS, load_mazes
+from scene_compare import CompareScene
 
 pygame.init()
 pygame.font.init()
@@ -110,7 +111,7 @@ class SoundFX:
     def _make_level_up_sound(self):
         fanfare = [523, 784, 1046, 1318, 1568]
         comb = array.array('h')
-        for idx, freq in enumerate(notes := fanfare):
+        for idx, freq in enumerate(fanfare):
             dur = 0.08 if idx < 4 else 0.45
             comb.extend(self._tone(freq, dur, 0.30))
         return pygame.mixer.Sound(buffer=comb.tobytes())
@@ -269,7 +270,6 @@ class GameDirector:
         self.last_school = "en"
         # Cross-platform Y-axis polarity compensation
         self.y_mult = -1.0 if sys.platform == "darwin" else 1.0
-        
         self.sfx = SoundFX()
         self.speech = SmartSpeechEngine()
         self.controller = None
@@ -289,8 +289,13 @@ class GameDirector:
         self.current_level = 1
         self.maze_scene = None
         self.classroom_scene = None
-        self.active_scene = None
         
+        # Launch into the retro title screen first
+        self.active_scene = StartScene(self)
+
+    def start_game(self):
+        """Called when player presses Start/Space on the title screen."""
+        self.sfx.play_gem()
         self.load_level(self.current_level)
 
     def init_controller(self):
@@ -391,9 +396,15 @@ class GameDirector:
         self.last_school = language
         
         cfg = LEVELS.get(self.current_level, LEVELS[1])
-        quota = cfg.get("challenges_per_school", 5)
+        quota = cfg.get("challenges_per_school", 4)
+        scene_type = cfg.get("scene_type", "classroom")
         
-        self.classroom_scene = ClassroomScene(self, total_challenges=quota)
+        if scene_type == "compare":
+            mode = cfg.get("compare_mode", "adjust_number")
+            self.classroom_scene = CompareScene(self, total_challenges=quota, language=language, mode=mode)
+        else:
+            self.classroom_scene = ClassroomScene(self, total_challenges=quota)
+            
         self.active_scene = self.classroom_scene
 
     def exit_school(self):
@@ -418,6 +429,62 @@ class GameDirector:
         else:
             self.current_level = 2
             self.active_scene = Level2Scene(self)
+
+# -------------------------------------------------------------
+# START SCENE: TITLE / SPLASH SCREEN
+# -------------------------------------------------------------
+class StartScene:
+    def __init__(self, director):
+        self.director = director
+        self.blink_timer = 0
+        self.show_prompt = True
+
+        # Robust relative path anchored to this script file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        title_img_path = os.path.join(base_dir, "assets", "title_screen.png")
+
+        if os.path.exists(title_img_path):
+            try:
+                loaded_img = pygame.image.load(title_img_path).convert_alpha()
+                self.title_image = pygame.transform.scale(loaded_img, (WIDTH, HEIGHT))
+            except Exception as e:
+                print(f"Warning: Could not load title image: {e}")
+                self.title_image = None
+        else:
+            print(f"Notice: No title image at '{title_img_path}'. Using retro procedural fallback.")
+            self.title_image = None
+
+    def handle_event(self, event):
+        # Gamepad Start / A button or Keyboard Space / Enter
+        if event.type == pygame.JOYBUTTONDOWN and event.button in (0, 1, 6, 7):
+            self.director.start_game()
+        elif event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
+            self.director.start_game()
+
+    def update(self):
+        self.blink_timer += 1
+        if self.blink_timer % 30 == 0:
+            self.show_prompt = not self.show_prompt
+
+    def draw(self, surface):
+        if self.title_image:
+            surface.blit(self.title_image, (0, 0))
+        else:
+            # Fallback if title_screen.png is absent
+            surface.fill((15, 15, 25))
+            
+            title_txt = FONT_BIG.render("PIPPA & MARIO", True, COLOR_ACCENT)
+            sub_txt = FONT_MED.render("Math Quest", True, (59, 130, 246))
+            surface.blit(title_txt, title_txt.get_rect(center=(WIDTH // 2, HEIGHT // 3)))
+            surface.blit(sub_txt, sub_txt.get_rect(center=(WIDTH // 2, HEIGHT // 3 + 60)))
+
+            sprite_rect = self.director.math_player_sprite.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 30))
+            surface.blit(self.director.math_player_sprite, sprite_rect)
+
+        # Blinking 8-bit prompt
+        if self.show_prompt:
+            prompt_surf = FONT_MED.render("PRESS START OR SPACE", True, COLOR_TEXT_LIT)
+            surface.blit(prompt_surf, prompt_surf.get_rect(center=(WIDTH // 2, HEIGHT - 70)))
 
 # -------------------------------------------------------------
 # SCENE 1: THE MAZE / OVERWORLD (DATA-DRIVEN)
@@ -824,7 +891,6 @@ class ClassroomScene:
                     target_bx = self.carry_block.x + push_dx
                     target_by = self.carry_block.y + push_dy
 
-                    # Safe screen boundaries keeping a corridor for Mario to walk around
                     min_bx = 60
                     max_bx = WIDTH - self.carry_block.width - 60
                     min_by = 70
@@ -833,7 +899,6 @@ class ClassroomScene:
                     clamped_bx = max(min_bx, min(max_bx, target_bx))
                     clamped_by = max(min_by, min(max_by, target_by))
 
-                    # If block hits a boundary, stop Mario from walking through it
                     if clamped_bx != target_bx:
                         if push_dx > 0:
                             new_x = clamped_bx - self.player_rect.width
@@ -984,6 +1049,10 @@ class Level2Scene:
 # GLOBAL HUD
 # -------------------------------------------------------------
 def draw_persistent_hud(surface, director):
+    # Hide the HUD while on the splash / start screen
+    if isinstance(director.active_scene, StartScene):
+        return
+
     pygame.draw.rect(surface, (18, 20, 28), (0, 0, WIDTH, 50))
     pygame.draw.line(surface, (45, 52, 70), (0, 50), (WIDTH, 50), 2)
     

@@ -2,3 +2,5 @@ __pycache__/
 *.py[cod]
 .DS_Store
 voice_cache/
+Z_notebook_chat_texts/
+Z_make_notebook_latest_state.sh

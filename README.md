@@ -1,6 +1,6 @@
 # Pippa's educational retro game quest
 
-A modular, retro-style educational game designed to teach two-digit column addition with carrying, and other skills, directed at MCPS French Immersion Programme. Players explore maze overworlds, collect gems, and complete math challenges at bilingual English and French schools to progress through levels[cite: 3].
+A modular, retro-style educational game designed to teach two-digit column addition with carrying, and other skills, directed at MCPS French Immersion Programme. Players explore maze overworlds, collect gems, and complete math challenges at bilingual English and French schools to progress through levels.
 
 ---
 
@@ -47,7 +47,7 @@ A modular, retro-style educational game designed to teach two-digit column addit
 
 ### Running the Game
 
-Clone the repository and launch the main loop[cite: 3]:
+Clone the repository and launch the main loop:
 
 ```bash
 git clone https://github.com/johnmcculloch/pippa-math-quest.git
@@ -59,10 +59,10 @@ python3 pippa_educational_retrogame.py
 
 ### Controls
 
-| Action | Gamepad (Logitech / Xbox / PS)[cite: 3] | Keyboard Fallback[cite: 3] |
+| Action | Gamepad (Logitech / Xbox / PS) | Keyboard Fallback |
 | :--- | :--- | :--- |
-| **Move / Push Block**[cite: 3] | Left Stick OR Right Stick[cite: 3] | `W, A, S, D` or Arrow Keys[cite: 3] |
-| **Cycle Number**[cite: 3] | Stick Up / Down or D-Pad[cite: 3] | `Up` / `Down` or `W` / `S`[cite: 3] |
-| **Confirm / Enter School**[cite: 3] | `A` Button (Button 0 or 1)[cite: 3] | `Space` or `Enter`[cite: 3] |
+| **Move / Push Block** | Left Stick OR Right Stick | `W, A, S, D` or Arrow Keys |
+| **Cycle Number** | Stick Up / Down or D-Pad | `Up` / `Down` or `W` / `S` |
+| **Confirm / Enter School** | `A` Button (Button 0 or 1) | `Space` or `Enter` |
 
 ---

@@ -22,7 +22,7 @@ pygame.event.pump()
 
 WIDTH, HEIGHT = 900, 650
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pippa & Mario: Math Quest")
+pygame.display.set_caption("Pippa & Marryo: Math Quest")
 clock = pygame.time.Clock()
 
 # Color Palette
@@ -264,7 +264,7 @@ def t(key, lang="en", **kwargs):
 # GAME DIRECTOR (PERSISTENT STATE & DATA-DRIVEN LEVEL LOADER)
 # -------------------------------------------------------------
 class GameDirector:
-    def __init__(self, character_name="mario"):
+    def __init__(self, character_name="pippa"):
         self.score = 0
         self.language = "en"
         self.last_school = "en"
@@ -292,6 +292,14 @@ class GameDirector:
         
         # Launch into the retro title screen first
         self.active_scene = StartScene(self)
+
+    def set_character(self, character_name):
+        self.character_name = character_name
+        # Reload sprites according to the new character
+        self.math_player_sprite = load_character_sprite(character_name, target_height=self.digit_h)
+        self.maze_player_sprite = load_character_sprite(character_name, target_height=34)
+        # Transition into the first level
+        self.load_level(self.current_level)
 
     def start_game(self):
         """Called when player presses Start/Space on the title screen."""
@@ -433,6 +441,109 @@ class GameDirector:
 # -------------------------------------------------------------
 # START SCENE: TITLE / SPLASH SCREEN
 # -------------------------------------------------------------
+from characters import CHARACTERS, CHARACTER_KEYS, load_character_sprite
+
+class CharacterSelectScene:
+    def __init__(self, director):
+        self.director = director
+        self.selected_idx = 0
+        # Pre-cache preview cards and sprites (120px tall for preview)
+        self.previews = {k: load_character_sprite(k, target_height=120) for k in CHARACTER_KEYS}
+        self.pulse = 0
+
+    def handle_event(self, event):
+        # Navigation: Left / Right
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_LEFT, pygame.K_a):
+                self.selected_idx = (self.selected_idx - 1) % len(CHARACTER_KEYS)
+                self.director.sfx.play_gem()
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                self.selected_idx = (self.selected_idx + 1) % len(CHARACTER_KEYS)
+                self.director.sfx.play_gem()
+            elif event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
+                self.confirm_selection()
+
+        elif event.type == pygame.JOYBUTTONDOWN:
+            if event.button in (0, 1, 6, 7):  # A / Start
+                self.confirm_selection()
+
+        elif event.type == pygame.JOYAXISMOTION:
+            # Simple stick flick support
+            if event.axis == 0:
+                if event.value < -0.6:
+                    self.selected_idx = (self.selected_idx - 1) % len(CHARACTER_KEYS)
+                    self.director.sfx.play_gem()
+                elif event.value > 0.6:
+                    self.selected_idx = (self.selected_idx + 1) % len(CHARACTER_KEYS)
+                    self.director.sfx.play_gem()
+
+    def confirm_selection(self):
+        chosen_key = CHARACTER_KEYS[self.selected_idx]
+        self.director.sfx.play_level_up()
+        self.director.set_character(chosen_key)
+
+    def update(self):
+        self.pulse = (self.pulse + 1) % 60
+
+    def draw(self, surface):
+        surface.fill(BG_COLOR)
+
+        # Header Title
+        title = FONT_BIG.render("CHOOSE YOUR HERO", True, COLOR_ACCENT)
+        surface.blit(title, title.get_rect(center=(WIDTH // 2, 70)))
+
+        hint = FONT_SMALL.render("Use Left / Right (Stick/Arrows) and Press (A) or SPACE to Select", True, COLOR_TEXT_DIM)
+        surface.blit(hint, hint.get_rect(center=(WIDTH // 2, 115)))
+
+        # Character Cards layout
+        card_w, card_h = 180, 260
+        spacing = 30
+        total_width = len(CHARACTER_KEYS) * card_w + (len(CHARACTER_KEYS) - 1) * spacing
+        start_x = (WIDTH - total_width) // 2
+        card_y = 150
+
+        for idx, key in enumerate(CHARACTER_KEYS):
+            x = start_x + idx * (card_w + spacing)
+            card_rect = pygame.Rect(x, card_y, card_w, card_h)
+            is_active = (idx == self.selected_idx)
+
+            # Card background and border highlight
+            bg_col = (35, 40, 56) if is_active else (25, 28, 40)
+            border_col = COLOR_ACCENT if is_active else (50, 58, 78)
+            border_width = 3 if is_active else 1
+
+            pygame.draw.rect(surface, bg_col, card_rect, border_radius=8)
+            pygame.draw.rect(surface, border_col, card_rect, width=border_width, border_radius=8)
+
+            # Draw Character Sprite
+            sprite = self.previews[key]
+            spr_rect = sprite.get_rect(center=(card_rect.centerx, card_rect.y + 110))
+            # Subtle floating bounce for selected character
+            if is_active:
+                spr_rect.y += int(3 * math.sin(self.pulse * 0.1))
+            surface.blit(sprite, spr_rect)
+
+            # Character Name
+            info = CHARACTERS[key]
+            name_col = COLOR_TEXT_LIT if is_active else COLOR_TEXT_DIM
+            name_txt = FONT_MED.render(info["name"], True, name_col)
+            surface.blit(name_txt, name_txt.get_rect(center=(card_rect.centerx, card_rect.bottom - 45)))
+
+            role_txt = FONT_SMALL.render(info["title"], True, COLOR_TARGET if is_active else COLOR_TEXT_DIM)
+            surface.blit(role_txt, role_txt.get_rect(center=(card_rect.centerx, card_rect.bottom - 20)))
+
+        # Selected Character Detail Panel at Bottom
+        selected_key = CHARACTER_KEYS[self.selected_idx]
+        sel_info = CHARACTERS[selected_key]
+        desc = sel_info.get(f"desc_{self.director.language}", sel_info["desc_en"])
+        
+        detail_rect = pygame.Rect(100, 440, WIDTH - 200, 90)
+        pygame.draw.rect(surface, (18, 20, 30), detail_rect, border_radius=8)
+        pygame.draw.rect(surface, (45, 52, 70), detail_rect, width=1, border_radius=8)
+
+        desc_txt = FONT_SMALL.render(desc, True, COLOR_TEXT_LIT)
+        surface.blit(desc_txt, desc_txt.get_rect(center=detail_rect.center))
+
 class StartScene:
     def __init__(self, director):
         self.director = director
@@ -455,11 +566,10 @@ class StartScene:
             self.title_image = None
 
     def handle_event(self, event):
-        # Gamepad Start / A button or Keyboard Space / Enter
-        if event.type == pygame.JOYBUTTONDOWN and event.button in (0, 1, 6, 7):
-            self.director.start_game()
-        elif event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER):
-            self.director.start_game()
+        if (event.type == pygame.JOYBUTTONDOWN and event.button in (0, 1, 6, 7)) or \
+           (event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_KP_ENTER)):
+            self.director.sfx.play_gem()
+            self.director.active_scene = CharacterSelectScene(self.director)
 
     def update(self):
         self.blink_timer += 1
@@ -473,7 +583,7 @@ class StartScene:
             # Fallback if title_screen.png is absent
             surface.fill((15, 15, 25))
             
-            title_txt = FONT_BIG.render("PIPPA & MARIO", True, COLOR_ACCENT)
+            title_txt = FONT_BIG.render("PIPPA & MARRYO", True, COLOR_ACCENT)
             sub_txt = FONT_MED.render("Math Quest", True, (59, 130, 246))
             surface.blit(title_txt, title_txt.get_rect(center=(WIDTH // 2, HEIGHT // 3)))
             surface.blit(sub_txt, sub_txt.get_rect(center=(WIDTH // 2, HEIGHT // 3 + 60)))
@@ -581,7 +691,7 @@ class MazeScene:
             if self.player_rect.right > self.school_en_rect.right:
                 self.player_rect.right = self.school_en_rect.right
 
-        # Perimeter clamp keeping Mario inside maze boundary
+        # Perimeter clamp keeping character inside maze boundary
         self.player_rect.left = max(0, self.player_rect.left)
         self.player_rect.right = min(WIDTH, self.player_rect.right)
         self.player_rect.top = max(75, self.player_rect.top)
@@ -1075,7 +1185,7 @@ def draw_persistent_hud(surface, director):
 # MAIN GAME LOOP
 # -------------------------------------------------------------
 if __name__ == '__main__':
-    director = GameDirector("mario")
+    director = GameDirector("pippa")
 
     while True:
         pygame.event.pump()

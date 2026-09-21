@@ -416,15 +416,15 @@ class CompareScene:
 # ISOLATED SCENE TEST HARNESS
 # -------------------------------------------------------------
 if __name__ == "__main__":
-    from pippa_maths_retrogame import GameDirector, draw_persistent_hud
+    from pippa_educational_retrogame import GameDirector, draw_persistent_hud
     pygame.init()
     screen = pygame.display.set_mode((900, 650))
     pygame.display.set_caption("Compare Scene Dual-Mode Test")
     clock = pygame.time.Clock()
 
-    director = GameDirector("mario")
+    director = GameDirector("pippa")
     TEST_MODE = "adjust_number"  # Switch between "operator" or "adjust_number"
-    director.language = "fr"    # Switch between "en" or "fr"
+    director.language = "en"    # Switch between "en" or "fr"
     scene = CompareScene(director, total_challenges=8, language="en", mode=TEST_MODE)
     director.active_scene = scene
 

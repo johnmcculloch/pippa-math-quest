@@ -1,18 +1,18 @@
-# Pippa & Mario: Math Quest
+# Pippa's educational retro game quest
 
 A modular, retro-style educational game designed to teach two-digit column addition with carrying, and other skills, directed at MCPS French Immersion Programme. Players explore maze overworlds, collect gems, and complete math challenges at bilingual English and French schools to progress through levels[cite: 3].
 
 ---
 
 ### Features
-
-* **RPG Adventure Loop:** Navigate mazes, collect gem collectibles (+5 pts), and unlock English and French schools (+500 pts per sum)[cite: 3].
-* **Kinesthetic Math:** Learn column addition hands-on by walking Mario to push the carried "1" into the tens column[cite: 3].
-* **Bilingual Support (EN / FR):** Dedicated English School and French École entrances with spoken and visual prompts in both languages[cite: 3].
-* **Offline Spoken Audio:** Natural human voice narration using `gTTS` with automatic offline caching in `voice_cache/`, falling back to native system speech (`say` or `espeak`)[cite: 3].
-* **Ambidextrous Controls:** Full dual-stick gamepad support alongside an arrow/WASD keyboard fallback[cite: 3].
-* **Data-Driven Architecture:** Level progression and maze layouts are separated into `gameplay_parameters.py` and `mazes.txt` for easy level creation without touching game code[cite: 3].
-
+* **RPG Adventure Loop:** Hero Selection Screen: Choose your character at launch (Pippa, Marryo, Capivara, or Danny) with preview cards, custom roles, and bilingual bios.
+* **Overworld Maze Loop:** Navigate mazes (MAZE_A, MAZE_B, MAZE_C), collect gems (+5 pts), and complete coursework at English and French schools to unlock next levels.
+* **Kinesthetic Column Addition (Level 1):** Practice stacked addition hands-on by controlling your character to push the carried 1 block into the tens column.
+* **Number Comparison & Operators (Levels 2 & 3):** Solve bilingual inequality challenges by physically pushing operator blocks (<, =, >) or adjusting numbers to satisfy expressions.
+* **Bilingual Immersion (EN / FR):** Dedicated English School and French Ecole entrances featuring written and spoken instructions, number words, and voice feedback in both languages.
+* **Smart Audio & Offline Caching:** High-fidelity TTS speech via gTTS with automatic offline caching in voice_cache/, falling back smoothly to native system speech (say on macOS or espeak on Linux). Includes procedurally synthesized retro sound effects.
+* **Cross-Platform Controller Support:** Native support for gamepads with ambidextrous dual-stick navigation, D-Pad support, startup stick-centering guards, and macOS axis inversion compensation, alongside keyboard controls.
+* **Data-Driven Architecture:** Custom maze layouts (mazes.txt), level progression rules (gameplay_parameters.py), and character rosters (characters.py) can be modified independently from core engine logic.   
 ---
 
 ### Prerequisites & Installation
@@ -52,7 +52,7 @@ Clone the repository and launch the main loop[cite: 3]:
 ```bash
 git clone https://github.com/johnmcculloch/pippa-math-quest.git
 cd pippa-math-quest
-python3 pippa_maths_retrogame.py
+python3 pippa_educational_retrogame.py
 ```
 
 ---
@@ -66,8 +66,3 @@ python3 pippa_maths_retrogame.py
 | **Confirm / Enter School**[cite: 3] | `A` Button (Button 0 or 1)[cite: 3] | `Space` or `Enter`[cite: 3] |
 
 ---
-
-### Level Customization
-
-* **`mazes.txt`**: Define maze layouts using plain text[cite: 3]. Use `#` for walls, `.` for gems, `P` for the player start, `F` for École, and `E` for English School[cite: 3].
-* **`gameplay_parameters.py`**: Configure problem ranges (`num1_range`, `num2_range`), question quotas per school, and which maze layout to load for each level[cite: 3].
